@@ -1,11 +1,30 @@
 # OCRmyPDF 中文说明
 
-我将为您创建一个中文版的 README.md 文件。以下是基于原始英文版本的中文翻译：
-
-```markdown:/Users/huapai/PycharmProjects/OCRmyPDF/README.md
 <!-- SPDX-FileCopyrightText: 2014 Julien Pfefferkorn -->
 <!-- SPDX-FileCopyrightText: 2015 James R. Barlow -->
 <!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+
+# OCRmyPDF GUI 图形界面版本
+
+<img src="docs/images/logo-square-256.svg" width="240" alt="OCRmyPDF GUI">
+
+## 预构建软件包
+
+我们通过 GitHub Actions 提供 Windows、macOS 和 Linux 的预构建软件包。
+
+1. 前往 [Actions 页面](https://github.com/kevinmattew/OCRmyPDFGUI/actions)
+2. 选择最近成功的 workflow 运行记录
+3. 下载适合您平台的构建产物 (Windows/macOS/Linux)
+4. 解压软件包并运行可执行文件
+
+### 各平台使用说明:
+- **Windows**: 双击 `OCRmyPDF-GUI.exe`
+- **macOS**: 打开 `OCRmyPDF-GUI.app` 应用包
+- **Linux**: 从终端运行 `OCRmyPDF-GUI` 可执行文件
+
+注意：由于 SVG 格式限制，应用程序图标可能无法在所有平台上正确显示。为了获得最佳效果，我们建议将 SVG 图标转换为平台特定格式（Windows 使用 .ico，macOS 使用 .icns）。
+
+---
 
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
 

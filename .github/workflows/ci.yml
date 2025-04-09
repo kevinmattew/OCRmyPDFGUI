@@ -1,0 +1,105 @@
+name: Manual Trigger Test
+
+on:
+  workflow_dispatch: # Only manual trigger
+
+jobs:
+  test_trigger:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Echo message
+      run: echo "Workflow manually triggered!"
+  build_app: # Renamed job for clarity
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Using Python 3.11 for consistency across platforms for build
+        python-version: ["3.11"]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    # --- System Dependencies ---
+    - name: Install Linux system dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        # Install libexempi3 as it was needed for tests previously
+        sudo apt-get install -y --no-install-recommends libexempi3
+        # Add any other system dependencies required by your GUI toolkit or gui.py here
+        # e.g., sudo apt-get install -y python3-tk python3-pil.imagetk for Tkinter/Pillow
+
+    # Add steps for Windows/macOS system dependencies if needed
+
+    - name: Install Python dependencies and PyInstaller
+      run: |
+        python -m pip install --upgrade pip
+        # Install build dependencies first
+        pip install hatchling hatch-vcs
+        # Install the project itself and its core dependencies
+        # Ensure all runtime dependencies for gui.py are included in pyproject.toml
+        pip install .
+        # Install PyInstaller
+        pip install pyinstaller
+
+    - name: Build application with PyInstaller using spec file
+      run: |
+        pyinstaller gui.spec --noconfirm # Assumes gui.spec is correctly configured
+
+    - name: Prepare Artifact Path and Name
+      id: artifact_prep
+      shell: bash
+      run: |
+        ARTIFACT_NAME=""
+        ARTIFACT_PATH=""
+        DIST_DIR="./dist" # Default PyInstaller output directory
+
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          ARTIFACT_NAME="ocrmypdfgui-linux"
+          # Assuming the spec file creates an executable named 'gui' inside dist/
+          ARTIFACT_PATH="${DIST_DIR}/gui"
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          ARTIFACT_NAME="ocrmypdfgui-windows"
+          # Assuming the spec file creates 'gui.exe' inside dist/
+          ARTIFACT_PATH="${DIST_DIR}/gui.exe"
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          ARTIFACT_NAME="ocrmypdfgui-macos"
+          # Check if an .app bundle was created
+          if [ -d "${DIST_DIR}/gui.app" ]; then
+            echo "Detected .app bundle, creating zip archive."
+            ditto -c -k --sequesterRsrc --keepParent "${DIST_DIR}/gui.app" "${DIST_DIR}/gui-macos.zip"
+            ARTIFACT_PATH="${DIST_DIR}/gui-macos.zip"
+            ARTIFACT_NAME+=".zip" # Append .zip to artifact name for clarity
+          else
+            # Assuming a single executable named 'gui' was created
+            ARTIFACT_PATH="${DIST_DIR}/gui"
+          fi
+        fi
+
+        # Check if the expected artifact path exists
+        if [ ! -e "$ARTIFACT_PATH" ]; then
+           echo "Error: Expected artifact path '$ARTIFACT_PATH' does not exist after build."
+           echo "Listing contents of ${DIST_DIR}:"
+           ls -lha "${DIST_DIR}"
+           exit 1
+        fi
+
+        echo "Determined artifact name: ${ARTIFACT_NAME}"
+        echo "Determined artifact path: ${ARTIFACT_PATH}"
+        echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+        echo "artifact_path=${ARTIFACT_PATH}" >> $GITHUB_OUTPUT
+
+    - name: Upload application artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.artifact_prep.outputs.artifact_name }}
+        path: ${{ steps.artifact_prep.outputs.artifact_path }}
+        if-no-files-found: error # Fail the workflow if the artifact wasn't created

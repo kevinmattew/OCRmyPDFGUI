@@ -2,6 +2,28 @@
 <!-- SPDX-FileCopyrightText: 2015 James R. Barlow -->
 <!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 
+# OCRmyPDF GUI Version
+
+<img src="docs/images/logo-square-256.svg" width="240" alt="OCRmyPDF GUI">
+
+## Pre-built Packages
+
+We provide pre-built packages for Windows, macOS and Linux through GitHub Actions. 
+
+1. Go to the [Actions tab](https://github.com/kevinmattew/OCRmyPDFGUI/actions)
+2. Select the latest successful workflow run
+3. Download the artifact for your platform (Windows/macOS/Linux)
+4. Extract the package and run the executable
+
+### Platform Specific Notes:
+- **Windows**: Double-click `OCRmyPDF-GUI.exe`
+- **macOS**: Open the `OCRmyPDF-GUI.app` bundle
+- **Linux**: Run the `OCRmyPDF-GUI` executable from terminal
+
+Note: The application icon may not display correctly on all platforms due to SVG format limitations. For best results, we recommend converting the SVG icon to platform-specific formats (.ico for Windows, .icns for macOS).
+
+---
+
 <img src="docs/images/logo.svg" width="240" alt="OCRmyPDF">
 
 [![Build Status](https://github.com/ocrmypdf/OCRmyPDF/actions/workflows/build.yml/badge.svg)](https://github.com/ocrmypdf/OCRmyPDF/actions/workflows/build.yml) [![PyPI version][pypi]](https://pypi.org/project/ocrmypdf/) ![Homebrew version][homebrew] ![ReadTheDocs][docs] ![Python versions][pyversions]
