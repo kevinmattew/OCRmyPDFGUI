@@ -32,8 +32,8 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        # Install libexempi3 as it was needed for tests previously
-        sudo apt-get install -y --no-install-recommends libexempi3
+        # Install libexempi8 (updated from libexempi3)
+        sudo apt-get install -y --no-install-recommends libexempi8
         # Add any other system dependencies required by your GUI toolkit or gui.py here
         # e.g., sudo apt-get install -y python3-tk python3-pil.imagetk for Tkinter/Pillow
 
@@ -47,6 +47,8 @@ jobs:
         # Install the project itself and its core dependencies
         # Ensure all runtime dependencies for gui.py are included in pyproject.toml
         pip install .
+        # Install PyQt6 explicitly for GUI functionality
+        pip install PyQt6
         # Install PyInstaller
         pip install pyinstaller
 
