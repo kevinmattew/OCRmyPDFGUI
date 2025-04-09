@@ -13,9 +13,8 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        # 包含 PyQt6 的翻译文件
-        ('/path/to/PyQt6/Qt6/translations', 'PyQt6/Qt6/translations'),
         # 包含 SVG 图标文件（虽然可能无法直接使用）
+        # PyQt6 翻译文件通常由 PyInstaller 钩子自动处理
         ('docs/images/logo-square-256.svg', '.'),
     ],
     hiddenimports=[],
