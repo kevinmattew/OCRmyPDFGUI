@@ -39,18 +39,18 @@ jobs:
 
     # Add steps for Windows/macOS system dependencies if needed
 
-    - name: Install Python dependencies and PyInstaller
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        # Install build dependencies first
-        pip install hatchling hatch-vcs
-        # Install the project itself and its core dependencies
-        # Ensure all runtime dependencies for gui.py are included in pyproject.toml
-        pip install .
-        # Install PyQt6 explicitly for GUI functionality
+        # Install PyQt6 first because gui.spec imports it
         pip install PyQt6
+        # Install build dependencies
+        pip install hatchling hatch-vcs
         # Install PyInstaller
         pip install pyinstaller
+        # Install the project itself and its core dependencies last
+        # Ensure all runtime dependencies for gui.py are included in pyproject.toml
+        pip install .
 
     - name: Build application with PyInstaller using spec file
       run: |

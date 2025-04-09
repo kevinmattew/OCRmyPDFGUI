@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-import PyQt6.QtCore # Import necessary module
+from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
 
@@ -9,20 +9,15 @@ block_cipher = None
 # - macOS: .icns 文件
 # 并将下面的 'icon' 参数替换为相应的文件路径
 
-# Dynamically find PyQt6 translations path
-qt_translations_path = PyQt6.QtCore.QLibraryInfo.location(
-    PyQt6.QtCore.QLibraryInfo.LibraryPath.TranslationsPath
-)
-
 a = Analysis(
     ['gui.py'],
     pathex=[],
     binaries=[],
     datas=[
-        # Include PyQt6 translations dynamically
-        (qt_translations_path, 'PyQt6/Qt6/translations'),
-        # Include SVG icon file
+        # 包含 SVG 图标文件
         ('docs/images/logo-square-256.svg', '.'),
+        # PyQt6 翻译文件会通过 collect_data_files 自动收集
+        *collect_data_files('PyQt6', includes=['**/translations/*'])
     ],
     hiddenimports=[],
     hookspath=[],
