@@ -54,14 +54,19 @@ exe = EXE(
     entitlements_file=None,
 )
 
-# 对于 macOS 应用捆绑包
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='OCRmyPDF-GUI',
-)
+# 对于 macOS 应用捆绑包（仅在 macOS 上创建）
+if platform.system() == 'Darwin':
+    app = BUNDLE(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        name='OCRmyPDF-GUI.app',
+        icon='OCRmyPDF.icns',  # 替换为生成的 .icns 文件
+        bundle_identifier='org.ocrmypdf.gui',
+        info_plist={
+            'NSHighResolutionCapable': 'True',
+            'LSBackgroundOnly': 'False',
+            'NSRequiresAquaSystemAppearance': 'False',
+        },
+    )
