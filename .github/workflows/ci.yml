@@ -1,117 +1,144 @@
-name: Manual Trigger Test
+name: Build Release
+
+# 限制并发运行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
-  workflow_dispatch: # Only manual trigger
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 jobs:
-  test_trigger:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Echo message
-      run: echo "Workflow manually triggered!"
-  build_app: # Renamed job for clarity
-    runs-on: ${{ matrix.os }}
+  build:
     strategy:
+      # 允许其他任务继续运行，即使某个任务失败
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        # Using Python 3.11 for consistency across platforms for build
-        python-version: ["3.11"]
+        include:
+          - os: macos-latest
+            arch: x64
+            target: x86_64-apple-darwin
+          - os: macos-14
+            arch: arm64
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            arch: x64
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            arch: arm64
+            target: aarch64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: ${{ matrix.arch }}
 
-    # --- System Dependencies ---
-    - name: Install Linux system dependencies
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        # Install system dependencies for GUI and OCR
-        sudo apt-get install -y --no-install-recommends \
-          libexempi8 \
-          libxcb-xinerama0 \
-          libxcb-icccm4 \
-          libxcb-image0 \
-          libxcb-keysyms1 \
-          libxcb-randr0 \
-          libxcb-render-util0 \
-          libxcb-shape0
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/AppData/Local/pip/Cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-pip-
 
-    - name: Install macOS system dependencies
-      if: runner.os == 'macOS'
-      run: |
-        brew install create-dmg
+      - name: Cache PyInstaller build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/PyInstaller
+            ~/AppData/Local/PyInstaller
+          key: ${{ runner.os }}-${{ matrix.arch }}-pyinstaller-${{ hashFiles('gui.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-pyinstaller-
 
-    # Add steps for Windows system dependencies if needed
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt  # 确保项目根目录有 requirements.txt
+          pip install pyinstaller
 
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # Install Qt dependencies first
-        pip install PyQt6 PyQt6-Qt6
-        # Install build dependencies
-        pip install hatchling hatch-vcs
-        # Install PyInstaller
-        pip install pyinstaller
-        # Install the project itself and its core dependencies last
-        pip install .
+      - name: Create icons (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # 安装 imagemagick 用于图像转换
+          brew install imagemagick
+          # 将 SVG 转换为 ICNS
+          mkdir icon.iconset
+          convert -background none -resize 16x16 docs/images/logo-square-256.svg icon.iconset/icon_16x16.png
+          convert -background none -resize 32x32 docs/images/logo-square-256.svg icon.iconset/icon_32x32.png
+          convert -background none -resize 64x64 docs/images/logo-square-256.svg icon.iconset/icon_64x64.png
+          convert -background none -resize 128x128 docs/images/logo-square-256.svg icon.iconset/icon_128x128.png
+          convert -background none -resize 256x256 docs/images/logo-square-256.svg icon.iconset/icon_256x256.png
+          convert -background none -resize 512x512 docs/images/logo-square-256.svg icon.iconset/icon_512x512.png
+          iconutil -c icns icon.iconset -o OCRmyPDF.icns
 
-    - name: Build application with PyInstaller using spec file
-      run: |
-        pyinstaller gui.spec --noconfirm # Assumes gui.spec is correctly configured
+      - name: Create icons (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          # 安装 ImageMagick
+          choco install imagemagick.app
+          # 将 SVG 转换为 ICO
+          magick convert -background none docs/images/logo-square-256.svg -define icon:auto-resize=256,128,64,48,32,16 OCRmyPDF.ico
 
-    - name: Prepare Artifact Path and Name
-      id: artifact_prep
-      shell: bash
-      run: |
-        ARTIFACT_NAME=""
-        ARTIFACT_PATH=""
-        DIST_DIR="./dist" # Default PyInstaller output directory
+      - name: Update spec file for macOS
+        if: runner.os == 'macOS'
+        run: |
+          sed -i '' 's|icon=.*|icon="OCRmyPDF.icns",|' gui.spec
 
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          ARTIFACT_NAME="ocrmypdfgui-linux"
-          # Assuming the spec file creates an executable named 'gui' inside dist/
-          ARTIFACT_PATH="${DIST_DIR}/gui"
-        elif [ "$RUNNER_OS" == "Windows" ]; then
-          ARTIFACT_NAME="ocrmypdfgui-windows"
-          # Assuming the spec file creates 'gui.exe' inside dist/
-          ARTIFACT_PATH="${DIST_DIR}/gui.exe"
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          ARTIFACT_NAME="ocrmypdfgui-macos"
-          # Check if an .app bundle was created
-          if [ -d "${DIST_DIR}/gui.app" ]; then
-            echo "Detected .app bundle, creating zip archive."
-            ditto -c -k --sequesterRsrc --keepParent "${DIST_DIR}/gui.app" "${DIST_DIR}/gui-macos.zip"
-            ARTIFACT_PATH="${DIST_DIR}/gui-macos.zip"
-            ARTIFACT_NAME+=".zip" # Append .zip to artifact name for clarity
-          else
-            # Assuming a single executable named 'gui' was created
-            ARTIFACT_PATH="${DIST_DIR}/gui"
-          fi
-        fi
+      - name: Update spec file for Windows
+        if: runner.os == 'Windows'
+        run: |
+          (Get-Content gui.spec) -replace 'icon=.*', 'icon="OCRmyPDF.ico",' | Set-Content gui.spec
 
-        # Check if the expected artifact path exists
-        if [ ! -e "$ARTIFACT_PATH" ]; then
-           echo "Error: Expected artifact path '$ARTIFACT_PATH' does not exist after build."
-           echo "Listing contents of ${DIST_DIR}:"
-           ls -lha "${DIST_DIR}"
-           exit 1
-        fi
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --clean gui.spec
 
-        echo "Determined artifact name: ${ARTIFACT_NAME}"
-        echo "Determined artifact path: ${ARTIFACT_PATH}"
-        echo "artifact_name=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
-        echo "artifact_path=${ARTIFACT_PATH}" >> $GITHUB_OUTPUT
+      - name: Package Application (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd dist
+          zip -r "OCRmyPDF-GUI-macos-${{ matrix.arch }}.zip" "OCRmyPDF-GUI.app"
 
-    - name: Upload application artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ steps.artifact_prep.outputs.artifact_name }}
-        path: ${{ steps.artifact_prep.outputs.artifact_path }}
-        if-no-files-found: error # Fail the workflow if the artifact wasn't created
+      - name: Package Application (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd dist
+          Compress-Archive -Path "OCRmyPDF-GUI" -DestinationPath "OCRmyPDF-GUI-windows-${{ matrix.arch }}.zip"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OCRmyPDF-GUI-${{ runner.os }}-${{ matrix.arch }}
+          path: dist/OCRmyPDF-GUI-*-${{ matrix.arch }}.zip
+          if-no-files-found: error
+
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: OCRmyPDF-GUI-*/*.zip
+          draft: true
+          generate_release_notes: true
