@@ -118,11 +118,11 @@ jobs:
           python -m PyInstaller --clean ${{ matrix.extra-pyinstaller-args }} --log-level DEBUG gui.spec
           
           # 检查构建产物
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            ls -la dist/OCRmyPDF-GUI
-          else
+          if ($env:RUNNER_OS -eq "Windows") {
+            Get-ChildItem -Path dist/OCRmyPDF-GUI -Force
+          } else {
             ls -la dist/OCRmyPDF-GUI.app
-          fi
+          }
 
       - name: Package Application (macOS)
         if: runner.os == 'macOS'
@@ -139,13 +139,13 @@ jobs:
       - name: Package Application (Windows)
         if: runner.os == 'Windows'
         run: |
-          cd dist
+          Set-Location dist
           if (-Not (Test-Path "OCRmyPDF-GUI")) {
             Write-Error "Error: OCRmyPDF-GUI directory not found!"
-            Get-ChildItem
+            Get-ChildItem -Force
             exit 1
           }
-          Compress-Archive -Path "OCRmyPDF-GUI" -DestinationPath "OCRmyPDF-GUI-windows-${{ matrix.arch }}.zip"
+          Compress-Archive -Path "OCRmyPDF-GUI" -DestinationPath "OCRmyPDF-GUI-windows-${{ matrix.arch }}.zip" -Force
           Write-Host "Created archive for Windows ${{ matrix.arch }}"
 
       - name: Upload Artifact
