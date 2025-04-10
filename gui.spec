@@ -18,9 +18,17 @@ a = Analysis(
         # 包含 SVG 图标文件
         ('docs/images/logo-square-256.svg', '.'),
         # PyQt6 翻译文件会通过 collect_data_files 自动收集
-        *collect_data_files('PyQt6', includes=['**/translations/*'])
+        *collect_data_files('PyQt6', includes=['**/translations/*']),
+        # 添加 OCRmyPDF 数据文件
+        *collect_data_files('ocrmypdf', includes=['data/*'])
     ],
-    hiddenimports=[],
+    hiddenimports=[
+        'ocrmypdf',
+        'ocrmypdf.helpers',
+        'ocrmypdf.exceptions',
+        'PyQt6.sip',
+        'PIL.Image'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -69,5 +77,18 @@ if platform.system() == 'Darwin':
             'NSHighResolutionCapable': 'True',
             'LSBackgroundOnly': 'False',
             'NSRequiresAquaSystemAppearance': 'False',
+            'CFBundleName': 'OCRmyPDF GUI',
+            'CFBundleDisplayName': 'OCRmyPDF GUI',
+            'CFBundleExecutable': 'OCRmyPDF-GUI',
+            'CFBundleIconFile': 'OCRmyPDF.icns',
+            'CFBundleIdentifier': 'org.ocrmypdf.gui',
+            'CFBundlePackageType': 'APPL',
+            'CFBundleShortVersionString': '1.0.0',
+            'LSMinimumSystemVersion': '10.15',
+            'NSAppleEventsUsageDescription': 'This app requires access to run OCR commands.',
+            'NSPrincipalClass': 'NSApplication',
+            'LSMultipleInstancesProhibited': 'True',
+            'NSSupportsAutomaticGraphicsSwitching': 'True',
+            'LSApplicationCategoryType': 'public.app-category.productivity',
         },
     )
