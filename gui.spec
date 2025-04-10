@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+import platform
 from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
@@ -54,7 +55,7 @@ exe = EXE(
     entitlements_file=None,
 )
 
-# 对于 macOS 应用捆绑包（仅在 macOS 上创建）
+# 对于 macOS 应用捆绑包
 if platform.system() == 'Darwin':
     app = BUNDLE(
         exe,
