@@ -24,15 +24,21 @@ jobs:
           - os: macos-latest
             arch: x64
             target: x86_64-apple-darwin
+            python-version: '3.11'
           - os: macos-14
             arch: arm64
             target: aarch64-apple-darwin
+            python-version: '3.11'
           - os: windows-latest
             arch: x64
             target: x86_64-pc-windows-msvc
+            python-version: '3.11'
+          # 对于 Windows ARM64，我们使用 x64 Python 通过模拟构建
           - os: windows-latest
-            arch: arm64
+            arch: x64
             target: aarch64-pc-windows-msvc
+            python-version: '3.11'
+            extra-pyinstaller-args: '--target-arch arm64'
 
     runs-on: ${{ matrix.os }}
 
@@ -42,8 +48,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
           architecture: ${{ matrix.arch }}
+          check-latest: true
+          cache: 'pip'
 
       - name: Cache pip packages
         uses: actions/cache@v4
@@ -106,7 +114,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --clean gui.spec
+          pyinstaller --clean ${{ matrix.extra-pyinstaller-args }} gui.spec
 
       - name: Package Application (macOS)
         if: runner.os == 'macOS'
