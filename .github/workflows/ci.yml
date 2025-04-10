@@ -114,19 +114,39 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --clean ${{ matrix.extra-pyinstaller-args }} gui.spec
+          # 显示更详细的构建信息
+          python -m PyInstaller --clean ${{ matrix.extra-pyinstaller-args }} --log-level DEBUG gui.spec
+          
+          # 检查构建产物
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            ls -la dist/OCRmyPDF-GUI
+          else
+            ls -la dist/OCRmyPDF-GUI.app
+          fi
 
       - name: Package Application (macOS)
         if: runner.os == 'macOS'
         run: |
           cd dist
+          if [ ! -d "OCRmyPDF-GUI.app" ]; then
+            echo "Error: OCRmyPDF-GUI.app directory not found!"
+            ls -la
+            exit 1
+          fi
           zip -r "OCRmyPDF-GUI-macos-${{ matrix.arch }}.zip" "OCRmyPDF-GUI.app"
+          echo "Created archive for macOS ${{ matrix.arch }}"
 
       - name: Package Application (Windows)
         if: runner.os == 'Windows'
         run: |
           cd dist
+          if (-Not (Test-Path "OCRmyPDF-GUI")) {
+            Write-Error "Error: OCRmyPDF-GUI directory not found!"
+            Get-ChildItem
+            exit 1
+          }
           Compress-Archive -Path "OCRmyPDF-GUI" -DestinationPath "OCRmyPDF-GUI-windows-${{ matrix.arch }}.zip"
+          Write-Host "Created archive for Windows ${{ matrix.arch }}"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
