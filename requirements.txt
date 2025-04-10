@@ -1,3 +1,17 @@
+# GUI dependencies
 PyQt6>=6.4.0
+PyQt6-Qt6>=6.4.0
+PyQt6-sip>=13.4.0
+
+# OCR core dependencies
 ocrmypdf>=15.4.0
+pikepdf>=8.10.1
 pillow>=10.0.0
+pdfminer.six>=20221105
+reportlab>=3.6.12
+python-magic>=0.4.27
+typing_extensions>=4.5.0
+
+# Runtime dependencies
+packaging>=23.0
+tqdm>=4.65.0
